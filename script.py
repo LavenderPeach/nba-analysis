@@ -1,96 +1,115 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from bs4 import BeautifulSoup
+import mysql.connector
+import time
+
+# Connect to the database
+conn = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="Edgerunner77",
+    database="basketball"
+)
+
+cursor = conn.cursor()
 
 # Set path to webdriver
 driver_path = r'C:\Users\cadeg\Desktop\chromedriver.exe'
 
-# chrome webdriver instance
+# Chrome webdriver instance
 chrome_service = ChromeService(driver_path)
 driver = webdriver.Chrome(service=chrome_service)
 
-# open nba.com team stats page
-team_stats_url = 'https://www.espn.com/nba/team/stats/_/name/bos'
-driver.get(team_stats_url)
+# NBA.com URL for teams
+teams_url = 'https://www.nba.com/stats/teams'
 
-driver.implicitly_wait(10)
+driver.get(teams_url)
 
-
-# get html content once javascript has executed
+# Get HTML content once JavaScript has executed
 html_content = driver.page_source
 
-# close browser
-driver.quit()
-
-# parse html with beautifulsoup
+# Parse HTML with BeautifulSoup
 soup = BeautifulSoup(html_content, 'html.parser')
 
-# find all player name links
-player_links = soup.find_all('a', class_='AnchorLink', attrs={'href': True, 'data-player-uid': True} )
+# Find links to each team's page
+team_links = soup.find_all('a', class_='Anchor_anchor__cSc3P StatsTeamsList_teamLink__q_miK')
 
-# create set to prevent duplicate names
-encountered_names = set()
 
-for player_link in player_links:
-    player_name = player_link.text.strip()
-    
-    # Check if the player name has not been encountered before
-    if player_name not in encountered_names:
-        player_url = player_link['href']
-        print("Player:", player_name)
-        print("Player URL:", player_url)
-        print("-------------------")
+for team_link in team_links:
+    # Extract team name and URL
+    team_name = team_link.text.strip()
+
+    team_url = 'https://www.nba.com' + team_link['href']
+
+        # Navigate to the team's page
+    driver.get(team_url)
+
+        # Get HTML content once JavaScript has executed
+    team_html_content = driver.page_source
+
+        # Parse HTML with BeautifulSoup for player names
+    team_soup = BeautifulSoup(team_html_content, 'html.parser')
+    player_links = team_soup.find_all('a', class_='Anchor_anchor__cSc3P', attrs={'href': lambda x: x and '/stats/player/' in x})
+
+    for player_link in player_links:
+        player_name = player_link.text.strip()
+        player_url = 'https://www.nba.com' + player_link['href'] + 'profile'
+
+            # Navigate to the player's page
+        driver.get(player_url)
+
+            # Add appropriate waiting mechanisms (implicit/explicit waits) to ensure page loads
+        time.sleep(1)  # Example: Wait for 5 seconds
+
+            # Get HTML content once JavaScript has executed
+        player_html_content = driver.page_source
+
+            # Parse HTML with BeautifulSoup for player details
+        player_soup = BeautifulSoup(player_html_content, 'html.parser')
+
+        try:
+            # Extract information using specific classes
+                player_info_values = player_soup.find_all('p', class_='PlayerSummary_playerInfoValue__JS8_v')
+                height = player_info_values[0].text.strip()
+                weight = player_info_values[1].text.strip()
+                college = player_info_values[3].text.strip()
+                print(college)
+                age = player_info_values[4].text.strip()[:-5]
+                draft_selection = player_info_values[6].text.strip()
+                experience = player_info_values[7].text.strip()[:-5]
+
+
+
+                main_inner_info = player_soup.find('p', class_='PlayerSummary_mainInnerInfo__jv3LO')
+                if main_inner_info:
+                    main_inner_info_pieces = main_inner_info.text.strip().split('|')
+                    print(main_inner_info_pieces)
+                    team = main_inner_info_pieces[0].strip()
+                    number = main_inner_info_pieces[1].replace('#', '').strip()
+                    position = main_inner_info_pieces[2].strip()
+
+                    print(f"Player: {player_name}, Team: {team}, Number: {number}, Position: {position}")
+
+                    cursor.execute("""
+                    INSERT INTO Players (player_name, player_height, player_weight, former_university, player_age, draft_selection, years_of_experience, player_team, player_number, player_position)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (player_name, height, weight, college, age, draft_selection, experience, team, number, position))
+
+        except Exception as e:
+                print(f"An error occured: {e}")
+                height, weight, college, age, draft_selection, experience = '', '', '', '', '', ''
+
+
+        # Extract main inner information
+
+
+            # Insert player details into the database
         
-        # Add the name to the set to avoid printing it again
-        encountered_names.add(player_name)
 
-# get all rows
+# Commit changes and close connections
+conn.commit()
+conn.close()
 
-rows = soup.find_all('tr', class_ = 'Table__TR')
-
-if rows:
-    # pull values out of rows
-    for row in rows:
-        data_cells = row.find_all('td')
-        if len(data_cells) == 13:
-            games_played = data_cells[0].text.strip()
-            games_started = data_cells[1].text.strip()
-            minutes = data_cells[2].text.strip()
-            points = data_cells[3].text.strip()
-            o_rebounds = data_cells[4].text.strip()
-            d_rebounds = data_cells[5].text.strip()
-            rebounds = data_cells[6].text.strip()
-            assists = data_cells[7].text.strip()
-            steals = data_cells[8].text.strip()
-            blocks = data_cells[9].text.strip()
-            turnovers = data_cells[10].text.strip()
-            fouls = data_cells[11].text.strip()
-            assist_turnover_ratio = data_cells[12].text.strip()
-
-            print("Points:", points)
-            print("Rebounds:", rebounds)
-            print("Assists:", assists)
-            print("-------------------")
-        elif len(data_cells) == 14:
-            fg_made = data_cells[0].text.strip()
-            fg_attempt = data_cells[1].text.strip()
-            fg_percent = data_cells[2].text.strip()
-            three_made = data_cells[3].text.strip()
-            three_attempt = data_cells[4].text.strip()
-            three_percent = data_cells[5].text.strip()
-            ft_made = data_cells[6].text.strip()
-            ft_attempt = data_cells[7].text.strip()
-            ft_percent = data_cells[8].text.strip()
-            two_made = data_cells[9].text.strip()
-            two_attempt = data_cells[10].text.strip()
-            two_percent = data_cells[11].text.strip()
-            scoring_efficiency = data_cells[12].text.strip()
-            shooting_efficiency = data_cells[13].text.strip()
-
-            print("FGM:", fg_made)
-            print("SH-EFF:", shooting_efficiency)
-        else:
-            print("Not enough data cells for this row")
-
-else:
-    print("No table rows found on the webpage.")
+# Close the browser
+driver.quit()
