@@ -34,7 +34,7 @@ teams_url = 'https://www.nba.com/stats/teams'
 driver.get(teams_url)
 
 # Add appropriate waiting mechanisms (implicit/explicit waits) to ensure page loads
-time.sleep(3)  # Example: Wait for 5 seconds
+time.sleep(3) 
 
 driver.implicitly_wait(30)
 
@@ -54,12 +54,12 @@ for team_link in team_links:
 
     team_url = 'https://www.nba.com' + team_link['href']
 
-        # Navigate to the team's page
+    # Navigate to the team's page
     driver.get(team_url)
     
 
-        # Add appropriate waiting mechanisms (implicit/explicit waits) to ensure page loads
-    time.sleep(1)  # Example: Wait for 5 seconds
+    # Add appropriate waiting mechanisms (implicit/explicit waits) to ensure page loads
+    time.sleep(1)  
 
         # Get HTML content once JavaScript has executed
     team_html_content = driver.page_source
@@ -80,7 +80,7 @@ for team_link in team_links:
 
             
                 # Add appropriate waiting mechanisms (implicit/explicit waits) to ensure page loads
-            time.sleep(1)  # Example: Wait for 5 seconds
+            time.sleep(1)
 
              # Wait for the dropdown to be clickable
             dropdown_menu = WebDriverWait(driver, 80).until(
