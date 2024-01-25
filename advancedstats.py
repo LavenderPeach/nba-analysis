@@ -56,6 +56,7 @@ for team_link in team_links:
 
         # Navigate to the team's page
     driver.get(team_url)
+    
 
         # Add appropriate waiting mechanisms (implicit/explicit waits) to ensure page loads
     time.sleep(1)  # Example: Wait for 5 seconds
@@ -76,6 +77,43 @@ for team_link in team_links:
             player_url = 'https://www.nba.com' + player_link['href'] + 'profile'
             # Navigate to the player's page
             driver.get(player_url)
+
+            
+                # Add appropriate waiting mechanisms (implicit/explicit waits) to ensure page loads
+            time.sleep(1)  # Example: Wait for 5 seconds
+
+             # Wait for the dropdown to be clickable
+            dropdown_menu = WebDriverWait(driver, 80).until(
+                EC.element_to_be_clickable((By.XPATH, '(//select[@class="DropDown_select__4pIg9"])[1]'))
+            )
+
+            # Click the dropdown to open the options
+            dropdown_menu.click()
+
+            # Wait for the "Regular Season" option to be clickable
+            regular_season_option = WebDriverWait(driver, 85).until(
+                EC.element_to_be_clickable((By.XPATH, '(//option[@value="Regular Season"])'))
+            )
+
+            # Click the "Regular Season" option
+            regular_season_option.click()
+
+
+            dropdown_menu_two = WebDriverWait(driver, 85).until(
+                EC.element_to_be_clickable((By.XPATH, '(//select[@class="DropDown_select__4pIg9"])[2]'))
+            )
+
+            # Click the dropdown to open the options
+            dropdown_menu_two.click()
+
+            # Wait for the "Regular Season" option to be clickable
+            mode_option = WebDriverWait(driver, 85).until(
+                EC.element_to_be_clickable((By.XPATH, '(//option[@value="PerGame"])'))
+            )
+
+            mode_option.click()
+
+
 
             # Get HTML content once JavaScript has executed
             player_html_content = driver.page_source
